@@ -78,6 +78,14 @@ no `packages/protocol` directory. Bump the pinned version deliberately; don't as
 pick up prereleases (they don't, by semver's own rules) if the pin is currently a `-rc.N`
 version.
 
+**`@smritheon/memora-core`'s `package.json` version must never regress to `0.2.1` or below.**
+Real versions `0.1.0`/`0.2.0`/`0.2.1` are already live on npm, published before this repo (and
+the protocol/verifier extraction) existed — `npm publish` rejects re-publishing an existing
+version, and a prerelease of an *already-superseded* version (e.g. `0.1.0-rc.1`, published now)
+would sort *older* than `0.2.1` and never become what `npm install` resolves to. The current
+version here is `0.3.0-rc.1` for exactly this reason — check `npm view @smritheon/memora-core
+versions` before ever changing it, don't just increment blindly.
+
 ## What does NOT belong in this repo
 
 Anything about: write authorization policy, key custody, Supabase/database schemas,
