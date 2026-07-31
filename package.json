@@ -1,0 +1,12 @@
+{
+  "name": "memora-sdk-repo",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "pnpm --filter @smritheon/memora-verifier --filter @smritheon/memora-core --filter @smritheon/memora-cli run build",
+    "test": "pnpm -r run test",
+    "typecheck:examples": "pnpm --filter @memora/example-openai-receipt run typecheck && pnpm --filter @memora/example-anthropic-receipt run typecheck",
+    "check:local-boundary": "node scripts/check-local-boundary.mjs"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

@@ -1,0 +1,63 @@
+{
+  "name": "@smritheon/memora-core",
+  "version": "0.2.1",
+  "description": "Memora SDK: verifiable agent provenance via gateway (baseUrl + apiKey). Write, query, read, verify.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./opentelemetry": {
+      "types": "./dist/opentelemetry.d.ts",
+      "default": "./dist/opentelemetry.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SPEC.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "build:release": "tsup",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm run build:release"
+  },
+  "dependencies": {
+    "@smritheon/memora-protocol": "0.1.0-rc.2"
+  },
+  "devDependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/sdk-trace-base": "^2.9.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  },
+  "peerDependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/sdk-trace-base": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@opentelemetry/api": {
+      "optional": true
+    },
+    "@opentelemetry/sdk-trace-base": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/memora-hq/memora-sdk.git",
+    "directory": "packages/sdk"
+  },
+  "sideEffects": false
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@smritheon/memora-cli",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": { "memora": "dist/cli.js" },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "write": "node dist/cli.js write",
+    "query": "node dist/cli.js query",
+    "read": "node dist/cli.js read",
+    "receipt": "node dist/cli.js receipt",
+    "verify": "node dist/cli.js verify",
+    "replay": "node dist/cli.js replay"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "@smritheon/memora-core": "workspace:*",
+    "@smritheon/memora-protocol": "0.1.0-rc.2",
+    "@smritheon/memora-verifier": "workspace:*",
+    "ethers": "^6.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  }
+}
