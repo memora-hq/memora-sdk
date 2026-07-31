@@ -1,13 +1,16 @@
 # memora-sdk
 
 The client-facing half of [Memora](https://github.com/memora-hq): a CLI and SDK for producing
-and verifying signed, hash-chained execution records. Three packages, one repo:
+and verifying signed, hash-chained execution records.
 
-| Package | What it is |
-|---|---|
-| [`@smritheon/memora-verifier`](./packages/verifier) | Offline verification of `.memora` bundles and on-disk local sessions. No network, no native dependencies. |
-| [`@smritheon/memora-core`](./packages/sdk) | The client SDK: `write`/`query`/`read`/`verify` against a Memora gateway. |
-| `@smritheon/memora-cli` | The `memora` command-line tool, built on both of the above. |
+**`memora-sdk` is this repo's name, not a package name — there is no `@smritheon/memora-sdk`
+npm package.** Three separate packages live here, each with its own name and its own release:
+
+| Package | Published as | What it is |
+|---|---|---|
+| [`packages/verifier`](./packages/verifier) | `@smritheon/memora-verifier` | Offline verification of `.memora` bundles and on-disk local sessions. No network, no native dependencies. |
+| [`packages/sdk`](./packages/sdk) | `@smritheon/memora-core` | The client SDK: `write`/`query`/`read`/`verify` against a Memora gateway. Already published (0.1.0/0.2.0/0.2.1 predate this repo split) — this repo is its new source of truth going forward. |
+| `packages/cli` | `@smritheon/memora-cli` | The `memora` command-line tool, built on both of the above. Not yet published (`private: true`). |
 
 ## Start here: verify a `.memora` bundle, offline
 

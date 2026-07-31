@@ -27,12 +27,24 @@ resolved-dependency-tree scan); it should always report 0 violations.
 
 ### Why the CLI is missing some commands you might expect
 
-The CLI in this repo supports `local init`, `local sessions`, `local show`, `local verify`,
-`local export`, and `local verify-bundle` — everything that only needs
-`@smritheon/memora-verifier`. It does **not** support `local run` (live capture), `local
-receipt` (HTML rendering), `local hook`, or `local doctor` — those need `@memora/local` and
-live in `memora-local`'s own CLI. If you're porting a change from the private monorepo's fuller
-CLI, check which side of that line it falls on before assuming it belongs here.
+**`memora local <subcommand>` here means file/session operations on evidence already on
+disk — never a local execution runtime.** This CLI does not, and will never, capture a live
+session. Concretely: `local init`, `local sessions`, `local show`, `local verify`, `local
+export`, and `local verify-bundle` all operate on data that already exists (an on-disk
+session store or a `.memora` file someone handed you), so they only need
+`@smritheon/memora-verifier`. It does **not** support `local run` (spawns a PTY and records a
+live session), `local receipt` (HTML rendering), `local hook`, or `local doctor` — those need
+`@memora/local` and live in `memora-local`'s own CLI. Don't let a user's expectation that
+`local run` exists here (it's a reasonable guess from the command family) turn into actually
+adding it — that reintroduces the node-pty dependency this split exists to avoid. If you're
+porting a change from the private monorepo's fuller CLI, check which side of that line it
+falls on before assuming it belongs here.
+
+A longer-term, clearer rename (not done now, to preserve compatibility) would be
+`memora bundle verify` / `memora session show` / `memora session export` instead of
+`memora local <subcommand>` — the `local` prefix on the surviving commands slightly
+overloads with the *removed* `local run`'s meaning. Worth revisiting if the `local`
+namespace's dual meaning causes real user confusion.
 
 ## Invariants — get these wrong and verification silently breaks
 

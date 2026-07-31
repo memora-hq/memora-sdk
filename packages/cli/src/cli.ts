@@ -122,7 +122,9 @@ async function cmdLocalVerifyBundle(path: string) {
   console.log(`Disclosure:       ${result.disclosure}${result.disclosure === "none" ? "" : ` (${result.disclosedCount} readable and matched to their signed hashes)`}`);
   for (const check of result.checks) console.log(`  ${check.status === "passed" ? "✓" : check.status === "warning" ? "⚠" : "✗"} ${check.name}: ${check.detail}`);
   for (const error of result.errors) console.log(`  ✗ ${error}`);
-  if (!result.valid) process.exitCode = 1;
+  if (!result.valid) { process.exitCode = 1; return; }
+  // Cryptographic validity and signer identity are different claims — never conflate them.
+  console.log("A signature proves the record was not altered. It does not prove who produced it.");
 }
 // When pointed at the gateway (api.getmemora.dev) rather than a raw indexer, requests
 // must go through /v1/events with a per-agent API key as the write secret. Self-hosted
@@ -941,6 +943,8 @@ async function main() {
     console.log("  memora receipt <id>");
     console.log("  memora verify <id>");
     console.log("  memora replay verify --memory <id> [--signer <0x...>]");
+    console.log("  # `local` here means file/session operations on evidence already on disk —");
+    console.log("  # not a local execution runtime. This CLI never captures a live session.");
     console.log("  memora local init");
     console.log("  memora local sessions");
     console.log("  memora local show <session-id>");
