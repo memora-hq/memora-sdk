@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Wallet, verifyMessage } from "ethers";
-import type { LocalExecutionManifestV1 } from "@smritheon/memora-protocol";
+import type { LocalExecutionManifestV1 } from "@memora-hq/memora-protocol";
 
 const LOCAL_MANIFEST_DOMAIN = "memora:local:manifest:v1\n";
 

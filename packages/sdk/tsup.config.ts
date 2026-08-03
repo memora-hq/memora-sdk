@@ -9,7 +9,7 @@ export default defineConfig({
   sourcemap: false,
   clean: true,
   bundle: true,
-  // @smritheon/memora-protocol must stay external, not bundled. Its dist is CommonJS
+  // @memora-hq/memora-protocol must stay external, not bundled. Its dist is CommonJS
   // and calls require("crypto") internally; esbuild inlines that as a lazy CJS shim
   // that resolves `require` via `typeof require !== "undefined"`. That check comes up
   // empty when this file is loaded as real ESM (e.g. `node dist/cli.js` in @memora/cli,
@@ -18,7 +18,7 @@ export default defineConfig({
   // dispatch, since the import happens at the top of the file. Marking it external
   // instead leaves it as a plain `import`, which Node's own CJS-from-ESM interop
   // resolves correctly at runtime — no bundler shim involved.
-  external: ["@opentelemetry/api", "@opentelemetry/sdk-trace-base", "@smritheon/memora-protocol"],
+  external: ["@opentelemetry/api", "@opentelemetry/sdk-trace-base", "@memora-hq/memora-protocol"],
   platform: "node",
   target: "es2020",
   outDir: "dist",

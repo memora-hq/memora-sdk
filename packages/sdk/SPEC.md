@@ -242,4 +242,4 @@ Each step’s `parent_ids` points to the previous step’s `memory_id`. Query by
 
 ## OpenTelemetry span bridge
 
-The optional `@smritheon/memora-core/opentelemetry` entry point provides a bounded `SpanProcessor`. It maps completed spans to `otel_span` events, copies only allowlisted attributes, preserves parent lineage when available, and reports queue/write drops through `onDrop`. It is not an OTLP collector and does not replace an observability backend.
+The optional `@memora-hq/memora-core/opentelemetry` entry point provides a bounded `SpanProcessor`. It maps completed spans to `otel_span` events, copies only allowlisted attributes, preserves parent lineage when available, and reports queue/write drops through `onDrop`. It is not an OTLP collector and does not replace an observability backend.

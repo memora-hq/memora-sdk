@@ -7,7 +7,7 @@
  * bundle produced under today's format must still read and verify with no key, no
  * account, and no network.
  *
- * @smritheon/memora-protocol is a real npm dependency in this repo (not a workspace
+ * @memora-hq/memora-protocol is a real npm dependency in this repo (not a workspace
  * sibling directory, unlike the private monorepo this package was extracted from), and
  * it publishes its vectors/ directory as part of the package — resolve the vector
  * through Node's own module resolution rather than a relative filesystem path.
@@ -19,7 +19,7 @@ import { describe, expect, it } from "vitest";
 import { readLocalBundle, verifyBundle } from "./bundle.js";
 
 const require = createRequire(import.meta.url);
-const protocolPackageJson = require.resolve("@smritheon/memora-protocol/package.json");
+const protocolPackageJson = require.resolve("@memora-hq/memora-protocol/package.json");
 const VECTOR_PATH = join(dirname(protocolPackageJson), "vectors", "bundle-v2-sealed.memora");
 
 /** Hardhat dev account #1 — the public, test-only key the vector was signed with. */

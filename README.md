@@ -3,14 +3,14 @@
 The client-facing half of [Memora](https://github.com/memora-hq): a CLI and SDK for producing
 and verifying signed, hash-chained execution records.
 
-**`memora-sdk` is this repo's name, not a package name — there is no `@smritheon/memora-sdk`
+**`memora-sdk` is this repo's name, not a package name — there is no `@memora-hq/memora-sdk`
 npm package.** Three separate packages live here, each with its own name and its own release:
 
 | Package | Published as | What it is |
 |---|---|---|
-| [`packages/verifier`](./packages/verifier) | `@smritheon/memora-verifier` | Offline verification of `.memora` bundles and on-disk local sessions. No network, no native dependencies. |
-| [`packages/sdk`](./packages/sdk) | `@smritheon/memora-core` | The client SDK: `write`/`query`/`read`/`verify` against a Memora gateway. Already published (0.1.0/0.2.0/0.2.1 predate this repo split) — this repo is its new source of truth going forward. |
-| `packages/cli` | `@smritheon/memora-cli` | The `memora` command-line tool, built on both of the above. Not yet published (`private: true`). |
+| [`packages/verifier`](./packages/verifier) | `@memora-hq/memora-verifier` | Offline verification of `.memora` bundles and on-disk local sessions. No network, no native dependencies. |
+| [`packages/sdk`](./packages/sdk) | `@memora-hq/memora-core` | The client SDK: `write`/`query`/`read`/`verify` against a Memora gateway. Already published (0.1.0/0.2.0/0.2.1 predate this repo split) — this repo is its new source of truth going forward. |
+| `packages/cli` | `@memora-hq/memora-cli` | The `memora` command-line tool, built on both of the above. Not yet published (`private: true`). |
 
 ## Start here: verify a `.memora` bundle, offline
 
@@ -18,22 +18,22 @@ If someone hands you a `.memora` evidence bundle, you don't need an account, a n
 connection, or to trust Memora's hosted service to check it's real:
 
 ```bash
-npm install -g @smritheon/memora-cli   # not yet published — see AGENTS.md
+npm install -g @memora-hq/memora-cli   # not yet published — see AGENTS.md
 memora local verify-bundle ./evidence.memora
 ```
 
 This checks the manifest signature, event-chain lineage, and payload hashes entirely offline.
-`@smritheon/memora-verifier` is the library behind this command — install it directly if you're
+`@memora-hq/memora-verifier` is the library behind this command — install it directly if you're
 writing your own verifier instead of shelling out to the CLI.
 
 ## Then: talk to the hosted service
 
 ```bash
-npm install @smritheon/memora-core
+npm install @memora-hq/memora-core
 ```
 
 ```typescript
-import { MemoraClient } from "@smritheon/memora-core";
+import { MemoraClient } from "@memora-hq/memora-core";
 
 const client = new MemoraClient({ baseUrl: "https://api.getmemora.dev", apiKey: "..." });
 const receipt = await client.write({ agentId: "my-agent", content: { ... } });
@@ -62,7 +62,7 @@ pnpm run check:local-boundary   # proves no package here depends on node-pty/Ele
 ## Versioning
 
 Each package here follows independent semver, pinned against a specific
-`@smritheon/memora-protocol` release (see that package's own versioning rules — a signing
+`@memora-hq/memora-protocol` release (see that package's own versioning rules — a signing
 digest or wire-format change there is always a major version). This repo does not use a single
 shared version number across its three packages.
 

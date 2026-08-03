@@ -1,6 +1,6 @@
 # Contributing
 
-`memora-sdk` (`@smritheon/memora-verifier`, `@smritheon/memora-core`, `@smritheon/memora-cli`)
+`memora-sdk` (`@memora-hq/memora-verifier`, `@memora-hq/memora-core`, `@memora-hq/memora-cli`)
 is an open-source developer preview under Apache 2.0. Contributions are welcome — bug fixes,
 documentation improvements, and SDK/CLI ergonomics all help.
 
@@ -28,7 +28,7 @@ pnpm run check:local-boundary
 
 1. Fork the repository and create a branch from `main`.
 2. Make changes. Keep commits focused — one logical change per commit.
-3. If your change touches `@smritheon/memora-protocol`'s version pin, update it deliberately in
+3. If your change touches `@memora-hq/memora-protocol`'s version pin, update it deliberately in
    every package's `package.json` that depends on it, not just one.
 4. Run `pnpm build && pnpm test && pnpm run check:local-boundary` locally before pushing. CI runs
    the same.

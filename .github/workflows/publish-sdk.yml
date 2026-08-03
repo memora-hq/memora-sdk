@@ -1,16 +1,16 @@
 name: Publish SDK
 
-# Publishes @smritheon/memora-core via npm Trusted Publishing (OIDC) — no NPM_TOKEN
+# Publishes @memora-hq/memora-core via npm Trusted Publishing (OIDC) — no NPM_TOKEN
 # secret anywhere.
 #
 # One-time prerequisite, done on npmjs.com by a maintainer with publish rights on the
-# @smritheon scope: on the package's (or scope's) settings page, add a Trusted Publisher
+# @memora-hq scope: on the package's (or scope's) settings page, add a Trusted Publisher
 # pointing at this exact repo and this exact workflow filename
 # (memora-hq/memora-sdk, .github/workflows/publish-sdk.yml). Until that's configured, this
 # workflow's `npm publish` step will fail with an auth error — that's expected, not a bug
 # in the workflow.
 #
-# @smritheon/memora-core already has published versions predating this repo split
+# @memora-hq/memora-core already has published versions predating this repo split
 # (0.1.0/0.2.0/0.2.1) — this workflow is the new release path going forward, not a first
 # publish.
 
@@ -48,10 +48,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm --filter @smritheon/memora-core run build:release
+        run: pnpm --filter @memora-hq/memora-core run build:release
 
       - name: Test
-        run: pnpm --filter @smritheon/memora-core exec vitest run
+        run: pnpm --filter @memora-hq/memora-core exec vitest run
 
       - name: Publish
         working-directory: packages/sdk

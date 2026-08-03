@@ -4,7 +4,7 @@ import type {
   EncryptedPayloadBundle,
   LocalEventRecordV1,
   LocalExecutionManifestV1,
-} from "@smritheon/memora-protocol";
+} from "@memora-hq/memora-protocol";
 
 /** Event payloads are content-addressed by the sha256 of their serialized ciphertext. */
 export function localObjectId(commit: { cid_ciphertext: string }): string {

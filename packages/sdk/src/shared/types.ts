@@ -14,4 +14,4 @@ export type {
   KeyStoreRow,
   LineageEventType,
   ActorType,
-} from "@smritheon/memora-protocol/dist/types.js";
+} from "@memora-hq/memora-protocol/dist/types.js";

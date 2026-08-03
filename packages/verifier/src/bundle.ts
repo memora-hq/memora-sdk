@@ -6,8 +6,8 @@ import type {
   LocalEvidenceBundle,
   LocalEvidenceBundleV2,
   MemoryPayload,
-} from "@smritheon/memora-protocol";
-import { canonicalizePayload, decrypt, hashPayload, verifyEventEnvelope, verifyEventId } from "@smritheon/memora-protocol";
+} from "@memora-hq/memora-protocol";
+import { canonicalizePayload, decrypt, hashPayload, verifyEventEnvelope, verifyEventId } from "@memora-hq/memora-protocol";
 import type { LocalIdentity } from "./identity.js";
 import { LocalEvidenceStore, localObjectId } from "./store.js";
 import { verifyManifest } from "./manifest.js";

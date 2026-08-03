@@ -1,10 +1,10 @@
 name: Publish verifier
 
-# Publishes @smritheon/memora-verifier via npm Trusted Publishing (OIDC) — no NPM_TOKEN
+# Publishes @memora-hq/memora-verifier via npm Trusted Publishing (OIDC) — no NPM_TOKEN
 # secret anywhere.
 #
 # One-time prerequisite, done on npmjs.com by a maintainer with publish rights on the
-# @smritheon scope: on the package's (or scope's) settings page, add a Trusted Publisher
+# @memora-hq scope: on the package's (or scope's) settings page, add a Trusted Publisher
 # pointing at this exact repo and this exact workflow filename
 # (memora-hq/memora-sdk, .github/workflows/publish-verifier.yml). Until that's configured,
 # this workflow's `npm publish` step will fail with an auth error — that's expected, not a
@@ -44,10 +44,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm --filter @smritheon/memora-verifier run build
+        run: pnpm --filter @memora-hq/memora-verifier run build
 
       - name: Test
-        run: pnpm --filter @smritheon/memora-verifier exec vitest run
+        run: pnpm --filter @memora-hq/memora-verifier exec vitest run
 
       - name: Publish
         working-directory: packages/verifier

@@ -6,7 +6,7 @@
  * provenance, replay, and attestation alongside whatever you already run.
  */
 
-import { hashPayload } from "@smritheon/memora-protocol/dist/crypto.js";
+import { hashPayload } from "@memora-hq/memora-protocol/dist/crypto.js";
 import { MemoraClient, type MemoraClientConfig, type WriteReceipt } from "./client.js";
 
 /** Default gateway URL for the Memora hosted tier (api.getmemora.dev). */

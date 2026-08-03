@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { Memora } from "@smritheon/memora-core";
+import { Memora } from "@memora-hq/memora-core";
 
 type AnthropicResponse = {
   id: string;

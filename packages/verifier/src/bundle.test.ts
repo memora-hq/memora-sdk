@@ -2,7 +2,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { LocalEvidenceBundleV2 } from "@smritheon/memora-protocol";
+import type { LocalEvidenceBundleV2 } from "@memora-hq/memora-protocol";
 import { exportLocalBundle, readLocalBundle, verifyBundle } from "./bundle.js";
 import { FileKeyProvider, getOrCreateIdentity } from "./identity.js";
 import { LocalSession } from "./session.js";

@@ -29,7 +29,7 @@ import { execFileSync } from "node:child_process";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const FORBIDDEN_BARE_SPECIFIERS = ["node-pty", "electron", "@memora/local", "@smritheon/memora-local"];
+const FORBIDDEN_BARE_SPECIFIERS = ["node-pty", "electron", "@memora/local", "@memora-hq/memora-local"];
 const FORBIDDEN_TRANSITIVE_NAMES = new Set(["node-pty", "electron"]);
 
 const EXCLUDED_DIR_NAMES = new Set([

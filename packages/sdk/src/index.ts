@@ -31,8 +31,8 @@ export type {
   EncryptedPayloadBundle,
   LineageEventType,
   ActorType,
-} from "@smritheon/memora-protocol/dist/types.js";
+} from "@memora-hq/memora-protocol/dist/types.js";
 
 // Aliases for backwards compatibility
 export type { WriteOptions as WriteMemoryInput, WriteReceipt as WriteMemoryResult } from "./client.js";
-export type { AccessPolicySummary as AccessPolicy } from "@smritheon/memora-protocol/dist/types.js";
+export type { AccessPolicySummary as AccessPolicy } from "@memora-hq/memora-protocol/dist/types.js";

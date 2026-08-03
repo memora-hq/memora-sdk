@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { canonicalizePayload, decrypt, hashPayload, verifyEventEnvelope, verifyEventId } from "@smritheon/memora-protocol";
-import type { LocalExecutionManifestV1 } from "@smritheon/memora-protocol";
+import { canonicalizePayload, decrypt, hashPayload, verifyEventEnvelope, verifyEventId } from "@memora-hq/memora-protocol";
+import type { LocalExecutionManifestV1 } from "@memora-hq/memora-protocol";
 import type { LocalIdentity } from "./identity.js";
 import { verifyManifest } from "./manifest.js";
 import { deriveLocalEncryptionKey } from "./session.js";

@@ -1,4 +1,4 @@
-# @smritheon/memora-verifier
+# @memora-hq/memora-verifier
 
 Offline verification for Memora local evidence — `.memora` bundles and on-disk local session
 stores. No network calls, no hosted service, no native or OS-specific dependencies.
@@ -8,7 +8,7 @@ session recorded on disk), is it internally consistent?** Signature recovery, ev
 lineage, payload hashes, and manifest continuity all get checked here, entirely offline.
 
 ```bash
-npm install @smritheon/memora-verifier
+npm install @memora-hq/memora-verifier
 ```
 
 ## What's in here

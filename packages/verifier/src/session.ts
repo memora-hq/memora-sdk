@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { canonicalizePayload, computeEventId, encrypt, hashPayload, signEventEnvelope } from "@smritheon/memora-protocol";
+import { canonicalizePayload, computeEventId, encrypt, hashPayload, signEventEnvelope } from "@memora-hq/memora-protocol";
 import type {
   LocalCaptureSource,
   LocalCaptureStatus,
@@ -8,7 +8,7 @@ import type {
   LocalExecutionManifestV1,
   MemoryCommit,
   MemoryPayload,
-} from "@smritheon/memora-protocol";
+} from "@memora-hq/memora-protocol";
 import type { LocalIdentity } from "./identity.js";
 import { signManifest } from "./manifest.js";
 import { LocalEvidenceStore } from "./store.js";

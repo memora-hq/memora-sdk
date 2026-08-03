@@ -2,8 +2,8 @@
 
 ## Scope
 
-This policy covers `@smritheon/memora-verifier`, `@smritheon/memora-core`, and
-`@smritheon/memora-cli` — the offline verifier, client SDK, and CLI in this repository. It does
+This policy covers `@memora-hq/memora-verifier`, `@memora-hq/memora-core`, and
+`@memora-hq/memora-cli` — the offline verifier, client SDK, and CLI in this repository. It does
 not cover Memora's hosted service (key custody, write authorization, service infrastructure,
 that's `memora-cloud`) or live session capture (`memora-local`) — each has its own security
 process.
@@ -35,7 +35,7 @@ relies on — is treated as high severity by default.
 recovering a key. Matching that key to a real-world identity is outside what this package (or
 any Memora verifier) establishes.
 
-**`@smritheon/memora-core` trusts the gateway it's pointed at.** The SDK itself does not verify
+**`@memora-hq/memora-core` trusts the gateway it's pointed at.** The SDK itself does not verify
 that a hosted deployment is honest — only that responses are internally consistent where
-verification is possible offline (see `@smritheon/memora-verifier` and `memora replay verify`
+verification is possible offline (see `@memora-hq/memora-verifier` and `memora replay verify`
 in the CLI for what's actually checked).

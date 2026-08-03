@@ -11,7 +11,7 @@ import { config as loadEnv } from "dotenv";
 // Load repo root .env when run via pnpm from package dir (cwd = packages/cli)
 loadEnv({ path: path.resolve(process.cwd(), "../../.env") });
 
-import { MemoraClient } from "@smritheon/memora-core";
+import { MemoraClient } from "@memora-hq/memora-core";
 import { ethers } from "ethers";
 import {
   verifyEventEnvelope,
@@ -27,7 +27,7 @@ import {
   type AgentTeeCanonicalSigningFields,
   type MemoryCommit,
   type MerkleProof,
-} from "@smritheon/memora-protocol";
+} from "@memora-hq/memora-protocol";
 import { fail, isWarning, pass, printChecks, type CheckResult, warn } from "./checks.js";
 import { formatReceiptCard } from "./receiptCard.js";
 import { getLookupId, resolveRef, type ResolveRefOptions } from "./resolveRef.js";
@@ -45,7 +45,7 @@ import {
   getOrCreateIdentity,
   verifySession,
   verifyBundle,
-} from "@smritheon/memora-verifier";
+} from "@memora-hq/memora-verifier";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 

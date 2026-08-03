@@ -102,7 +102,7 @@ export function createMemoraSpanProcessor(options: MemoraSpanProcessorOptions): 
         options.onDrop?.(span, "shutdown");
         return;
       }
-      if (span.attributes["memora.internal"] === true || span.instrumentationScope.name.startsWith("@smritheon/memora")) return;
+      if (span.attributes["memora.internal"] === true || span.instrumentationScope.name.startsWith("@memora-hq/memora")) return;
       if (options.shouldCapture && !options.shouldCapture(span)) return;
       if (queue.length >= maxQueueSize) {
         options.onDrop?.(span, "queue_full");

@@ -1,6 +1,6 @@
-# @smritheon/memora-core
+# @memora-hq/memora-core
 
-**Package:** [npmjs.com/package/@smritheon/memora-core](https://www.npmjs.com/package/@smritheon/memora-core)
+**Package:** [npmjs.com/package/@memora-hq/memora-core](https://www.npmjs.com/package/@memora-hq/memora-core)
 
 **Memora SDK** — add verifiable execution provenance to existing workflows without rewriting them. Works beside Temporal, LangGraph, CrewAI, Dapr, and custom agent runtimes. Does not replace orchestration.
 
@@ -14,9 +14,9 @@
 ## Install
 
 ```bash
-npm install @smritheon/memora-core
+npm install @memora-hq/memora-core
 # or
-pnpm add @smritheon/memora-core
+pnpm add @memora-hq/memora-core
 ```
 
 ---
@@ -26,7 +26,7 @@ pnpm add @smritheon/memora-core
 Get a per-agent API key from [getmemora.dev](https://getmemora.dev) → Identities → Credentials.
 
 ```typescript
-import { Memora } from "@smritheon/memora-core";
+import { Memora } from "@memora-hq/memora-core";
 
 const memora = new Memora({
   agentId: process.env.MEMORA_AGENT_ID!, // from console
@@ -106,7 +106,7 @@ Receipts record request/response hashes and integrator-supplied metadata into Me
 The optional bridge maps selected completed spans into Memora evidence events without replacing your OTLP exporter:
 
 ```typescript
-import { createMemoraSpanProcessor } from "@smritheon/memora-core/opentelemetry";
+import { createMemoraSpanProcessor } from "@memora-hq/memora-core/opentelemetry";
 
 const memoraProcessor = createMemoraSpanProcessor({
   memora,

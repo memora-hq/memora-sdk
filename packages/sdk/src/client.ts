@@ -2,14 +2,14 @@
  * MemoraClient: cloud mode (calls indexer + key-broker + IPFS gateway).
  */
 
-import { hashPayload, decrypt } from "@smritheon/memora-protocol/dist/crypto.js";
-import { DEFAULT_MEMORA_VERSION } from "@smritheon/memora-protocol/dist/canonicalize.js";
+import { hashPayload, decrypt } from "@memora-hq/memora-protocol/dist/crypto.js";
+import { DEFAULT_MEMORA_VERSION } from "@memora-hq/memora-protocol/dist/canonicalize.js";
 import type {
   MemoryPayload,
   MemoryRef,
   EncryptedPayloadBundle,
   AccessPolicySummary,
-} from "@smritheon/memora-protocol/dist/types.js";
+} from "@memora-hq/memora-protocol/dist/types.js";
 
 export interface MemoraClientConfig {
   indexerBaseUrl: string;
