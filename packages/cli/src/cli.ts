@@ -16,7 +16,8 @@ import { ethers } from "ethers";
 import {
   verifyEventEnvelope,
   recoverEnvelopeSigner,
-  verifyEventId,
+  verifyProfiledEventId,
+  EVENT_ID_PROFILES,
   verifyAgentSignature,
   verifyAgentTeeSignature,
   createTeeVerifier,
@@ -430,7 +431,7 @@ async function detectCommitPath(
   }
 }
 
-async function cmdReplayVerify(memoryId: string, expectedSigner?: string) {
+async function cmdReplayVerify(memoryId: string, expectedSigner?: string, eventIdProfile: typeof EVENT_ID_PROFILES[keyof typeof EVENT_ID_PROFILES] = EVENT_ID_PROFILES.hosted) {
   const timer = new PhaseTimer();
   console.log(`\nmemora replay verify: ${memoryId}`);
   const hcsProtected = !!process.env.HEDERA_HCS_SUBMIT_KEY;
@@ -481,15 +482,28 @@ async function cmdReplayVerify(memoryId: string, expectedSigner?: string) {
   }
 
   // ── 6. Parent linkage + ordering (Phase 3) ───────────────────────────────
-  const parentIds: string[] = Array.isArray(ref.parent_ids) ? ref.parent_ids : [];
+  let rawCommit = await timer.time("hcs_raw_fetch", () => fetchHcsCommit(ref.hcs_topic_id || "", ref.hcs_sequence || ""));
+  if (rawCommit && (rawCommit.memory_id !== ref.memory_id || (ref.event_id && rawCommit.event_id !== ref.event_id) ||
+      (ref.payload_hash && rawCommit.payload_hash !== ref.payload_hash.replace(/^0x/, "").toLowerCase()))) {
+    checks.push(fail("HCS record association", "raw commit does not correspond to the selected index record"));
+    rawCommit = null; overallOk = false;
+  }
+  const parentIds: string[] = rawCommit?.parent_event_ids ?? [];
+  const referenceWorkspace = (ref as unknown as { workspace_id?: string | null }).workspace_id;
   const childSeq = ref.hcs_sequence ? Number(ref.hcs_sequence) : null;
 
-  if (parentIds.length === 0) {
+  if (!rawCommit) {
+    checks.push(warn("parent linkage", "original signed parent references unavailable; index projections are not signing inputs"));
+  } else if (parentIds.length === 0) {
     checks.push(pass("parent linkage", "no parents declared"));
   } else {
     const parentRefs = await timer.time("parent_fetch_refs", () => Promise.all(parentIds.map(async (pid) => ({
       pid,
-      ref: await resolveRef(INDEXER_BASE_URL, pid, REF_OPTIONS),
+      ref: await (async () => {
+        const parent = await resolveRef(INDEXER_BASE_URL, pid, REF_OPTIONS);
+        return parent && referenceWorkspace && (parent as unknown as { workspace_id?: string | null }).workspace_id === referenceWorkspace &&
+          (pid === parent.memory_id || pid === parent.event_id) ? parent : null;
+      })(),
     }))));
 
     const missing   = parentRefs.filter((p) => !p.ref);
@@ -538,8 +552,8 @@ async function cmdReplayVerify(memoryId: string, expectedSigner?: string) {
   }
 
   // ── On-chain checks (Phase 4+5) — create provider/registry once ─────────────
-  const agentSignerAddr  = refAnyExt.agent_signer as string | null | undefined;
-  const agentIdBytes32   = ethers.keccak256(ethers.toUtf8Bytes(ref.agent_id));
+  const agentSignerAddr = rawCommit?.agent_signer;
+  const agentIdBytes32 = rawCommit ? ethers.keccak256(ethers.toUtf8Bytes(rawCommit.agent_id)) : null;
 
   // Determine event timestamp source — used for both signer validity and timeline checks
   let atTimestamp: number;
@@ -599,7 +613,7 @@ async function cmdReplayVerify(memoryId: string, expectedSigner?: string) {
   }
 
   // ── 8. On-chain signer timeline (Phase 5 upgrade of Phase 4 check) ────────
-  if (agentSignerAddr) {
+  if (agentSignerAddr && agentIdBytes32) {
     if (provider && REGISTRY_ADDRESS) {
       try {
         const isStrict = await registry!.strictAttestationRequired(agentIdBytes32);
@@ -643,10 +657,9 @@ async function cmdReplayVerify(memoryId: string, expectedSigner?: string) {
   }
 
   // ── 9. Fetch raw HCS commit and verify from source ─────────────────────────
-  const rawCommit = await timer.time("hcs_raw_fetch", () => fetchHcsCommit(ref.hcs_topic_id || "", ref.hcs_sequence || ""));
   if (rawCommit) {
     // 9a. event_id recomputation
-    const eidCheck = verifyEventId(rawCommit);
+    const eidCheck = verifyProfiledEventId(rawCommit, eventIdProfile);
     checks.push(
       eidCheck.valid
         ? pass("event_id integrity (from HCS)", "sha256 matches commitBase")
@@ -657,7 +670,7 @@ async function cmdReplayVerify(memoryId: string, expectedSigner?: string) {
     // 9b. Operator ECDSA signature (from HCS)
     if (rawCommit.signature) {
       if (expectedSigner) {
-        const sigCheck = verifyEventEnvelope(rawCommit, parentIds, expectedSigner);
+        const sigCheck = verifyEventEnvelope(rawCommit, rawCommit.parent_event_ids ?? [], expectedSigner);
         checks.push(
           sigCheck.valid
             ? pass("off-chain operator signature (from HCS)", `signer: ${sigCheck.recoveredSigner}`)
@@ -668,7 +681,7 @@ async function cmdReplayVerify(memoryId: string, expectedSigner?: string) {
         // No --signer provided: we can recover the signer but cannot confirm it is the
         // authorised operator. Report as a warning (recovering a signer is not proof of
         // authenticity) and prompt the user to pass --signer to actually verify identity.
-        const recovered = recoverEnvelopeSigner(rawCommit, parentIds);
+        const recovered = recoverEnvelopeSigner(rawCommit, rawCommit.parent_event_ids ?? []);
         checks.push(warn(
           "off-chain operator signature (from HCS)",
           recovered
@@ -693,9 +706,9 @@ async function cmdReplayVerify(memoryId: string, expectedSigner?: string) {
           agent_id:         rawCommit.agent_id,
           agent_signer:     rawCommit.agent_signer,
           parent_event_ids: [...parentIds].sort(),
-          payload_hash:     rawCommit.payload_hash?.replace(/^0x/, "") ?? "",
+          payload_hash:     rawCommit.payload_hash,
           task_id:          rawCommit.task_id ?? "0x" + "0".repeat(64),
-          tee_quote_hash:   rawTeeQuoteHash.replace(/^0x/, ""),
+          tee_quote_hash:   rawTeeQuoteHash,
         };
         agentSigResult = verifyAgentTeeSignature(agentTeeFields, rawCommit.agent_signature, rawCommit.agent_signer);
         domainLabel = "TEE domain";
@@ -705,7 +718,7 @@ async function cmdReplayVerify(memoryId: string, expectedSigner?: string) {
           agent_id:         rawCommit.agent_id,
           agent_signer:     rawCommit.agent_signer,
           parent_event_ids: [...parentIds].sort(),
-          payload_hash:     rawCommit.payload_hash?.replace(/^0x/, "") ?? "",
+          payload_hash:     rawCommit.payload_hash,
           task_id:          rawCommit.task_id ?? "0x" + "0".repeat(64),
         };
         agentSigResult = verifyAgentSignature(agentFields, rawCommit.agent_signature, rawCommit.agent_signer);
@@ -723,7 +736,7 @@ async function cmdReplayVerify(memoryId: string, expectedSigner?: string) {
 
     // 9d. payload_hash format consistency
     const storedHash = ref.payload_hash?.replace(/^0x/, "") ?? "";
-    const commitHash = rawCommit.payload_hash?.replace(/^0x/, "") ?? "";
+    const commitHash = rawCommit.payload_hash;
     checks.push(
       storedHash === commitHash
         ? pass("payload_hash consistency", `${storedHash.slice(0, 16)}…`)
@@ -1010,7 +1023,9 @@ async function main() {
       const memory           = getArg("--memory");
       const signer           = getArg("--signer");
       if (!memory) throw new Error("--memory required");
-      await cmdReplayVerify(memory, signer);
+      const profile = getArg("--event-id-profile") ?? EVENT_ID_PROFILES.hosted;
+      if (profile !== EVENT_ID_PROFILES.hosted && profile !== EVENT_ID_PROFILES.shared) throw new Error("unsupported event-ID profile");
+      await cmdReplayVerify(memory, signer, profile);
     } else {
       throw new Error(`Unknown command: ${cmd}${sub ? " " + sub : ""}`);
     }

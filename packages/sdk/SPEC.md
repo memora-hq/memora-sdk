@@ -243,3 +243,27 @@ Each step’s `parent_ids` points to the previous step’s `memory_id`. Query by
 ## OpenTelemetry span bridge
 
 The optional `@memora-hq/memora-core/opentelemetry` entry point provides a bounded `SpanProcessor`. It maps completed spans to `otel_span` events, copies only allowlisted attributes, preserves parent lineage when available, and reports queue/write drops through `onDrop`. It is not an OTLP collector and does not replace an observability backend.
+
+### Protected API read authentication (Foundation v1 Slice 04)
+
+`MemoraClient.query()` and reference retrieval used by `read()` and `verify()` send
+`Authorization: Bearer <writeSecret>` when configured. The high-level `Memora`
+configuration continues to map `apiKey` to this credential. No additional credential
+or workspace header is required; the server retains agent/workspace authorization.
+Without a credential, reads remain unauthenticated and protected servers deny them.
+
+The read destination is pinned from `indexerBaseUrl` when the client is constructed.
+Gateway mode uses `/v1/events` and `/v1/events/:id`; direct mode uses `/memories`
+and `/memory/:id`. A configured base path is retained. API read redirects are
+rejected, including same-origin redirects, so deployments must configure the final
+API URL. Updated gateways also reject redirects on their protected indexer-read
+proxy, returning 502 if the indexer redirects. Ambiguous base URLs (non-HTTP(S), URL credentials, query or fragment) and
+IDs that normalize outside the intended route are rejected before credentials are
+sent. Construct a new client when changing the API destination.
+
+Ciphertext requests to Storage/IPFS and existing wallet challenge/key-release
+requests do not reuse the API read headers. Ciphertext redirects carry no Memora
+API Bearer credential. This slice does not change key-broker authorization or
+`verify()` evidence semantics: reference retrieval alone is not original-proof
+verification, and absent `contract_tx_hash` still returns `valid: false` under the
+existing implementation.

@@ -117,3 +117,78 @@ describe("MemoraClient — path isolation between modes", () => {
     expect(path2).not.toContain("/write");
   });
 });
+
+describe.each([false, true])("protected API reads (gateway=%s)", (v1Routes) => {
+  const base = "https://api.memora.test/prefix";
+  const config = (writeSecret?: string) => ({ indexerBaseUrl: base + "/", keyBrokerBaseUrl: "https://broker.test", v1Routes, writeSecret });
+
+  it.each([undefined, "", "synthetic-api-key"])("uses only the configured credential: %s", async (secret) => {
+    const { calls } = installFetchMock();
+    const client = new MemoraClient(config(secret));
+    await client.query({ agentId: "a?agent_id=foreign", taskId: "task/#", limit: 5, offset: 2 });
+    await client.verify("id/?#https://foreign.test");
+    expect(calls).toHaveLength(2);
+    for (const [url, init] of calls) {
+      expect(new URL(url).origin).toBe("https://api.memora.test");
+      expect(new Headers(init?.headers).get("Authorization")).toBe(secret ? `Bearer ${secret}` : null);
+      expect(init?.redirect).toBe("error");
+      expect(new Headers(init?.headers).has("x-memora-workspace-id")).toBe(false);
+    }
+    const query = new URL(calls[0][0]);
+    expect(query.pathname).toBe(v1Routes ? "/prefix/v1/events" : "/prefix/memories");
+    expect(query.searchParams.get("agent_id")).toBe("a?agent_id=foreign");
+    expect(query.searchParams.get("task_id")).toBe("task/#");
+    expect(calls[1][0]).toContain("id%2F%3F%23https%3A%2F%2Fforeign.test");
+  });
+
+  it("pins the read API destination at construction", async () => {
+    const { calls } = installFetchMock();
+    const options = config("synthetic-api-key");
+    const client = new MemoraClient(options);
+    options.indexerBaseUrl = "https://foreign.test";
+    await client.query({ agentId: "agent-1" });
+    expect(new URL(calls[0][0]).origin).toBe("https://api.memora.test");
+  });
+
+  it.each([".", ".."])('rejects route traversal ID "%s" before sending credentials', async (id) => {
+    const { calls } = installFetchMock();
+    const result = await new MemoraClient(config("synthetic-api-key")).verify(id);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toMatch(/Invalid Memora API read URL/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it.each(["ftp://api.test", "https://api.test?route=", "https://api.test#fragment", "https://user:password@api.test"])("rejects an ambiguous read API base %s", async (indexerBaseUrl) => {
+    const { calls } = installFetchMock();
+    const client = new MemoraClient({ ...config("synthetic-api-key"), indexerBaseUrl });
+    await expect(client.query({ agentId: "agent-1" })).rejects.toThrow(/Invalid Memora API read URL/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("keeps the existing verify result when the authorized reference lacks chain proof", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ payload_hash: "ab".repeat(32) }) }));
+    const client = new MemoraClient(config("synthetic-api-key"));
+    expect(await client.verify("memory-id")).toEqual({ valid: false, reason: "no contract_tx_hash" });
+    expect(await client.verify("memory-id", "cd".repeat(32))).toEqual({ valid: false, reason: "payload_hash mismatch" });
+  });
+
+  it.each([
+    ["supabase", "https://foreign.test/payload"],
+    ["supabase", "https://api.memora.test/prefix/v1/events"],
+    ["ipfs", "https://ipfs.test/ipfs/"],
+  ])("does not attach API credentials to %s ciphertext at %s", async (storage_provider, location) => {
+    const calls: Array<[string, RequestInit | undefined]> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push([url, init]);
+      return { ok: true, json: async () => calls.length === 1
+        ? { storage_provider, storage_uri: location, cid_ciphertext: "QmSynthetic", payload_hash: "ab".repeat(32) }
+        : {} };
+    }));
+    const client = new MemoraClient({ ...config("synthetic-api-key"), ipfsGatewayUrl: location });
+    await expect(client.read("memory-id", async () => "signature", "wallet")).rejects.toThrow(/Malformed ciphertext bundle/);
+    expect(calls).toHaveLength(2);
+    expect(new Headers(calls[0][1]?.headers).get("Authorization")).toBe("Bearer synthetic-api-key");
+    expect(new Headers(calls[1][1]?.headers).has("Authorization")).toBe(false);
+    expect(calls[1][0]).toBe(storage_provider === "supabase" ? location : location + "QmSynthetic");
+  });
+});

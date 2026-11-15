@@ -13,3 +13,6 @@ export const verifyLocalBundle = verifyBundle;
 
 /** @deprecated use {@link verifySession} */
 export const verifyLocalSession = verifySession;
+
+// Caller pins the profile and operator separately from supplied evidence.
+export { verifyOriginalEvent, verifyProfiledEvent, verifyProfiledEventId, EVENT_ID_PROFILES, type EventIdProfile } from "@memora-hq/memora-protocol";

@@ -46,3 +46,27 @@ the short names.
 ## License
 
 Apache-2.0
+
+## Original hosted event bytes
+
+The package also re-exports protocol `verifyOriginalEvent`, `verifyProfiledEvent`,
+`verifyProfiledEventId` and `EVENT_ID_PROFILES`. These additive pure checks do not
+turn a hosted original into a Local session or bundle. Existing Local verification
+remains shared-profile only. No hosted storage-wrapper observations are trusted.
+
+```ts
+const result = verifyOriginalEvent(original, {
+  profile: EVENT_ID_PROFILES.hosted, // from your verification policy
+  expectedOperatorSigner: trustedOperatorAddress, // pinned outside the artifact
+});
+```
+
+This verifies the ID/preimage/operator statement, not agent signer governance,
+plaintext, tenant authorization, unsigned wrapper metadata, or TEE authenticity.
+Missing historical original signatures remain unavailable proof. Never obtain the
+expected operator from the artifact's own claimed signer.
+
+HCS CLI replay defaults to the hosted profile. To inspect explicitly known shared
+HCS records, use `--event-id-profile shared-protocol-json-stringify-v1` with
+`--signer`; there is no automatic fallback. This flag does not change Local bundle
+verification. Unknown profile values are rejected before replay.

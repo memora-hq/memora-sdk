@@ -46,8 +46,8 @@ importers:
         specifier: workspace:*
         version: link:../sdk
       '@memora-hq/memora-protocol':
-        specifier: 0.1.0-rc.2
-        version: 0.1.0-rc.2
+        specifier: 0.1.0-rc.3
+        version: 0.1.0-rc.3
       '@memora-hq/memora-verifier':
         specifier: workspace:*
         version: link:../verifier
@@ -71,8 +71,8 @@ importers:
   packages/sdk:
     dependencies:
       '@memora-hq/memora-protocol':
-        specifier: 0.1.0-rc.2
-        version: 0.1.0-rc.2
+        specifier: 0.1.0-rc.3
+        version: 0.1.0-rc.3
     devDependencies:
       '@opentelemetry/api':
         specifier: ^1.9.1
@@ -93,8 +93,8 @@ importers:
   packages/verifier:
     dependencies:
       '@memora-hq/memora-protocol':
-        specifier: 0.1.0-rc.2
-        version: 0.1.0-rc.2
+        specifier: 0.1.0-rc.3
+        version: 0.1.0-rc.3
       ethers:
         specifier: ^6.10.0
         version: 6.17.0
@@ -581,8 +581,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@memora-hq/memora-protocol@0.1.0-rc.2':
-    resolution: {integrity: sha512-DjkoQ2UeGJzCVWPpfZY9YAHpekbxBThu86JmnR55AtMPdJIH2oJaPXgz5u5jvBwNNEj0PWYwiha8iL7usnCfXQ==}
+  '@memora-hq/memora-protocol@0.1.0-rc.3':
+    resolution: {integrity: sha512-3GJXFC16kUGaWe34NInc8vUODHYCzPhQ4R66TA6BmlrBJ+6sSHLoTDaOeIzGeCBSaJ8djicQ9CBR6YHTaAkQWw==}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
@@ -1511,7 +1511,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@memora-hq/memora-protocol@0.1.0-rc.2':
+  '@memora-hq/memora-protocol@0.1.0-rc.3':
     dependencies:
       ethers: 6.17.0
     transitivePeerDependencies:

@@ -16,7 +16,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@memora-hq/memora-protocol": "0.1.0-rc.2",
+    "@memora-hq/memora-protocol": "0.1.0-rc.3",
     "ethers": "^6.10.0"
   },
   "devDependencies": {

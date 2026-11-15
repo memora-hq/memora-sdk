@@ -4,7 +4,9 @@
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
-  "bin": { "memora": "dist/cli.js" },
+  "bin": {
+    "memora": "dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
@@ -19,7 +21,7 @@
   "dependencies": {
     "dotenv": "^16.0.0",
     "@memora-hq/memora-core": "workspace:*",
-    "@memora-hq/memora-protocol": "0.1.0-rc.2",
+    "@memora-hq/memora-protocol": "0.1.0-rc.3",
     "@memora-hq/memora-verifier": "workspace:*",
     "ethers": "^6.10.0"
   },

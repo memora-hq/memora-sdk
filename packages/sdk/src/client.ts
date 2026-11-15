@@ -16,7 +16,7 @@ export interface MemoraClientConfig {
   keyBrokerBaseUrl: string;
   /** IPFS gateway for fetching ciphertext by CID (e.g. https://gateway.pinata.cloud/ipfs/) */
   ipfsGatewayUrl?: string;
-  /** Bearer token sent as Authorization header on POST /write (matches the operator's write secret or a per-agent api_key). */
+  /** Memora API Bearer credential for writes and protected reads (operator secret or per-agent API key). */
   writeSecret?: string;
   /**
    * When true, use /v1/ gateway API paths instead of direct indexer/key-broker paths.
@@ -83,6 +83,8 @@ function validateMemoryId(memoryId: string): void {
 }
 
 export class MemoraClient {
+  private readonly readApiBaseUrl: string;
+
   constructor(private config: MemoraClientConfig) {
     if (!this.config.indexerBaseUrl?.trim()) {
       throw new Error("MemoraClientConfig.indexerBaseUrl is required");
@@ -90,6 +92,8 @@ export class MemoraClient {
     if (!this.config.keyBrokerBaseUrl?.trim()) {
       throw new Error("MemoraClientConfig.keyBrokerBaseUrl is required");
     }
+    // Pin the read destination independently of later caller mutation of config.
+    this.readApiBaseUrl = this.config.indexerBaseUrl.trim().replace(/\/+$/, "");
   }
 
   private paths() {
@@ -168,7 +172,7 @@ export class MemoraClient {
     if (params.taskId) q.set("task_id", params.taskId);
     if (params.limit != null) q.set("limit", String(params.limit));
     if (params.offset != null) q.set("offset", String(params.offset));
-    const res = await fetch(`${this.config.indexerBaseUrl}${this.paths().memories}?${q}`);
+    const res = await this.fetchApiRead(`${this.paths().memories}?${q}`);
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   }
@@ -314,9 +318,26 @@ export class MemoraClient {
     return res.json() as Promise<FlushResult>;
   }
 
+  /** Only internally constructed protected API routes may carry the API key. */
+  private fetchApiRead(path: string): Promise<Response> {
+    const base = new URL(this.readApiBaseUrl);
+    const url = new URL(`${this.readApiBaseUrl}${path}`);
+    const expectedPath = base.pathname.replace(/\/+$/, "") + path.split("?")[0];
+    if (!["http:", "https:"].includes(base.protocol) || base.username || base.password ||
+        base.search || base.hash || url.origin !== base.origin || url.pathname !== expectedPath) {
+      throw new Error("Invalid Memora API read URL");
+    }
+    const headers: Record<string, string> = {};
+    if (this.config.writeSecret) {
+      headers["Authorization"] = `Bearer ${this.config.writeSecret}`;
+    }
+    // Reject all redirects, including same-origin redirects to non-API routes.
+    // Content and key-broker fetches must never reuse these headers.
+    return fetch(url.href, { headers, redirect: "error" });
+  }
+
   private async getRef(memoryId: string): Promise<MemoryRef> {
-    const base = this.config.indexerBaseUrl.replace(/\/$/, "");
-    const res = await fetch(`${base}${this.paths().memory(memoryId)}`);
+    const res = await this.fetchApiRead(this.paths().memory(memoryId));
     if (!res.ok) {
       if (res.status === 404) {
         throw new Error(`Memory not found: ${memoryId}`);
