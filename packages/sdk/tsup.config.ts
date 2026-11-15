@@ -18,7 +18,7 @@ export default defineConfig({
   // dispatch, since the import happens at the top of the file. Marking it external
   // instead leaves it as a plain `import`, which Node's own CJS-from-ESM interop
   // resolves correctly at runtime — no bundler shim involved.
-  external: ["@opentelemetry/api", "@opentelemetry/sdk-trace-base", "@memora-hq/memora-protocol"],
+  external: ["@opentelemetry/api", "@opentelemetry/sdk-trace-base", "@memora-hq/memora-protocol", "ethers"],
   platform: "node",
   target: "es2020",
   outDir: "dist",

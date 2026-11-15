@@ -22,6 +22,15 @@ export {
   type VerifyResult,
 } from "./client.js";
 
+// ─── Agent precommit signing (verified mode) ─────────────────────────────────
+export {
+  createPrivateKeyAgentSigner,
+  buildAgentPrecommitFields,
+  signAgentPrecommit,
+  absentTaskSentinel,
+  type AgentEventSigner,
+} from "./agentSigner.js";
+
 // ─── Shared types ────────────────────────────────────────────────────────────
 export type {
   MemoryPayload,

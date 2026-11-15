@@ -8,6 +8,7 @@
 
 import { hashPayload } from "@memora-hq/memora-protocol/dist/crypto.js";
 import { MemoraClient, type MemoraClientConfig, type WriteReceipt } from "./client.js";
+import type { AgentEventSigner } from "./agentSigner.js";
 
 /** Default gateway URL for the Memora hosted tier (api.getmemora.dev). */
 export const MEMORA_HOSTED_BASE_URL = "https://api.getmemora.dev";
@@ -58,6 +59,12 @@ export interface MemoraConfig {
 
   /** IPFS gateway base URL (read/decrypt only). */
   ipfsGatewayUrl?: string;
+  /**
+   * Optional agent precommit signer for verified-mode writes.
+   * Uses the established `memora:agent:v1` domain; keys stay client-side.
+   * Required for agents with integrity_mode=verified; omit for standard mode.
+   */
+  agentSigner?: AgentEventSigner;
   /**
    * @deprecated Integrity mode is configured per agent in the Memora console
    * (workspace_agents.integrity_mode). This field is ignored.
@@ -211,6 +218,7 @@ export class Memora {
         keyBrokerBaseUrl: resolvedBaseUrl,
         ipfsGatewayUrl:   config.ipfsGatewayUrl,
         writeSecret:      config.apiKey,
+        agentSigner:      config.agentSigner,
         v1Routes:         true,
       };
     } else {
@@ -220,6 +228,7 @@ export class Memora {
         keyBrokerBaseUrl: config.keyBrokerEndpoint ?? config.endpoint!,
         ipfsGatewayUrl:   config.ipfsGatewayUrl,
         writeSecret:      config.apiKey,
+        agentSigner:      config.agentSigner,
         v1Routes:         false,
       };
     }

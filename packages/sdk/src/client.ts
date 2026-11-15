@@ -3,13 +3,21 @@
  */
 
 import { hashPayload, decrypt } from "@memora-hq/memora-protocol/dist/crypto.js";
-import { DEFAULT_MEMORA_VERSION } from "@memora-hq/memora-protocol/dist/canonicalize.js";
+import {
+  canonicalizePayload,
+  DEFAULT_MEMORA_VERSION,
+} from "@memora-hq/memora-protocol/dist/canonicalize.js";
 import type {
   MemoryPayload,
   MemoryRef,
   EncryptedPayloadBundle,
   AccessPolicySummary,
 } from "@memora-hq/memora-protocol/dist/types.js";
+import {
+  buildAgentPrecommitFields,
+  signAgentPrecommit,
+  type AgentEventSigner,
+} from "./agentSigner.js";
 
 export interface MemoraClientConfig {
   indexerBaseUrl: string;
@@ -24,6 +32,12 @@ export interface MemoraClientConfig {
    * Default: false (backward-compatible direct paths).
    */
   v1Routes?: boolean;
+  /**
+   * Optional agent precommit signer for verified-mode writes.
+   * Private keys stay client-side; only address + signature are transmitted.
+   * Bearer API auth remains separate and required.
+   */
+  agentSigner?: AgentEventSigner;
 }
 
 /** Lineage metadata for execution graph (v0.2). All optional. */
@@ -49,6 +63,11 @@ export interface WriteOptions {
   meta?: Record<string, unknown>;
   /** v0.2 execution lineage (optional). Defaults memora_version to "0.2" when provided. */
   lineage?: WriteLineageOptions;
+  /**
+   * Per-write agent precommit signer. Overrides MemoraClientConfig.agentSigner.
+   * When set, the write always attaches agent_signer + agent_signature (no silent downgrade).
+   */
+  agentSigner?: AgentEventSigner;
 }
 
 export interface WriteReceipt {
@@ -126,6 +145,7 @@ export class MemoraClient {
       throw new Error("WriteOptions.contentType is required");
     }
     const lineage = options.lineage;
+    const parentIds = Array.isArray(lineage?.parent_ids) ? [...lineage.parent_ids] : [];
     const payload: MemoryPayload = {
       memora_version: lineage ? DEFAULT_MEMORA_VERSION : undefined,
       contentType: options.contentType,
@@ -145,6 +165,33 @@ export class MemoraClient {
         actor_id: lineage.actor_id,
       }),
     };
+
+    const body: Record<string, unknown> = {
+      payload,
+      agent_id: options.agentId,
+      task_id: options.taskId,
+    };
+
+    // Optional cryptographic agent signing — separate from Bearer API auth.
+    // Never reads private keys from env; never logs keys.
+    const signer = options.agentSigner ?? this.config.agentSigner;
+    if (signer) {
+      if (!signer.address?.trim()) {
+        throw new Error("agentSigner.address is required for verified-mode writes");
+      }
+      const payloadHash = hashPayload(canonicalizePayload(payload));
+      const fields = buildAgentPrecommitFields({
+        agentId: options.agentId,
+        signerAddress: signer.address,
+        parentIds,
+        payloadHash,
+        taskId: options.taskId,
+      });
+      const agent_signature = await signAgentPrecommit(signer, fields);
+      body.agent_signer = signer.address;
+      body.agent_signature = agent_signature;
+    }
+
     const writeHeaders: Record<string, string> = { "Content-Type": "application/json" };
     if (this.config.writeSecret) {
       writeHeaders["Authorization"] = `Bearer ${this.config.writeSecret}`;
@@ -152,11 +199,7 @@ export class MemoraClient {
     const res = await fetch(`${this.config.indexerBaseUrl}${this.paths().write}`, {
       method: "POST",
       headers: writeHeaders,
-      body: JSON.stringify({
-        payload,
-        agent_id: options.agentId,
-        task_id: options.taskId,
-      }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText }));

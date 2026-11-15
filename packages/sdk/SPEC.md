@@ -244,6 +244,29 @@ Each step’s `parent_ids` points to the previous step’s `memory_id`. Query by
 
 The optional `@memora-hq/memora-core/opentelemetry` entry point provides a bounded `SpanProcessor`. It maps completed spans to `otel_span` events, copies only allowlisted attributes, preserves parent lineage when available, and reports queue/write drops through `onDrop`. It is not an OTLP collector and does not replace an observability backend.
 
+### Agent precommit signing (Foundation v1 Slice 09)
+
+Verified-mode agents require a client-side agent signature in addition to Bearer API
+authentication. Configure an optional `agentSigner` on `Memora` / `MemoraClient`:
+
+```ts
+import { Memora, createPrivateKeyAgentSigner } from "@memora-hq/memora-core";
+
+const agentSigner = createPrivateKeyAgentSigner(process.env.AGENT_SIGNING_KEY!);
+const memora = new Memora({
+  agentId: "risk-agent",
+  apiKey: process.env.MEMORA_API_KEY,
+  baseUrl: process.env.MEMORA_BASE_URL,
+  agentSigner,
+});
+```
+
+The SDK signs the established `memora:agent:v1` digest over the raw `agent_id`,
+canonical payload hash, task reference (or zero sentinel), and transmitted parent
+references. Private keys never leave the client. Omit `agentSigner` for standard-mode
+unsigned writes. When a signer is configured, the SDK always attaches
+`agent_signer` + `agent_signature` (no silent downgrade).
+
 ### Protected API read authentication (Foundation v1 Slice 04)
 
 `MemoraClient.query()` and reference retrieval used by `read()` and `verify()` send
