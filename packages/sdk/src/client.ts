@@ -68,6 +68,13 @@ export interface WriteOptions {
    * When set, the write always attaches agent_signer + agent_signature (no silent downgrade).
    */
   agentSigner?: AgentEventSigner;
+  /**
+   * Optional producer idempotency key (Slice 14). Retries with the same key and
+   * content return the same accepted evidence identity. Does **not** imply the
+   * agent's external business action should re-execute — only that transport
+   * retries seek the same receipt.
+   */
+  idempotencyKey?: string;
 }
 
 export interface WriteReceipt {
@@ -201,6 +208,9 @@ export class MemoraClient {
     const writeHeaders: Record<string, string> = { "Content-Type": "application/json" };
     if (this.config.writeSecret) {
       writeHeaders["Authorization"] = `Bearer ${this.config.writeSecret}`;
+    }
+    if (options.idempotencyKey?.trim()) {
+      writeHeaders["Idempotency-Key"] = options.idempotencyKey.trim();
     }
     const res = await fetch(`${this.config.indexerBaseUrl}${this.paths().write}`, {
       method: "POST",
