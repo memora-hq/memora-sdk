@@ -122,8 +122,11 @@ export class MemoraClient {
         batchFlush: "/v1/batches/flush",
         memory:     (id: string) => `/v1/events/${encodeURIComponent(id)}`,
         memories:   "/v1/events",
+        evidence:   (id: string) => `/v1/events/${encodeURIComponent(id)}/evidence`,
+        export:     (id: string) => `/v1/events/${encodeURIComponent(id)}/export`,
         challenge:  "/v1/keys/challenge",
         keyRelease: "/v1/keys/release",
+        workspaceKeyRelease: "/v1/keys/workspace",
       };
     }
     return {
@@ -131,8 +134,11 @@ export class MemoraClient {
       batchFlush: "/batch/flush",
       memory:     (id: string) => `/memory/${encodeURIComponent(id)}`,
       memories:   "/memories",
+      evidence:   (id: string) => `/memory/${encodeURIComponent(id)}/evidence`,
+      export:     (id: string) => `/memory/${encodeURIComponent(id)}/export`,
       challenge:  "/challenge",
       keyRelease: "/keys",
+      workspaceKeyRelease: "/keys/workspace",
     };
   }
 
@@ -319,7 +325,123 @@ export class MemoraClient {
     return payload;
   }
 
-  /** Verify: fetch ref, optionally verify hash matches (and HCS inclusion). */
+  /**
+   * Download an authenticated hosted evidence-export container (Foundation Slice 10/11).
+   * Sealed by default — never embeds private keys or API credentials.
+   * When `disclose: true`, releases keys under the caller's principal, decrypts each
+   * event, and attaches `disclosed_payload` only after plaintext hashes to payload_hash.
+   */
+  async exportEvidence(
+    memoryId: string,
+    options?: { includeParents?: boolean; disclose?: boolean },
+  ): Promise<Record<string, unknown>> {
+    validateMemoryId(memoryId);
+    const q = options?.includeParents ? "?parents=1" : "";
+    const res = await this.fetchApiRead(`${this.paths().export(memoryId)}${q}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText })) as { error?: string; reason?: string };
+      if (res.status === 422 || err.reason === "original_proof_unavailable" || err.error === "original_proof_unavailable") {
+        throw new Error("original_proof_unavailable");
+      }
+      throw new Error(err.error || `Evidence export failed: ${res.status}`);
+    }
+    const doc = await res.json() as {
+      format?: string;
+      events?: Array<{
+        memory_id: string;
+        artifact_bytes_b64: string;
+        disclosed_payload?: MemoryPayload | null;
+      }>;
+      [key: string]: unknown;
+    };
+    if (!options?.disclose) return doc;
+
+    if (!this.config.writeSecret?.trim()) {
+      throw new Error("disclose requires MemoraClientConfig.writeSecret for authorized workspace key release");
+    }
+    if (!Array.isArray(doc.events)) {
+      throw new Error("invalid hosted evidence export: missing events");
+    }
+
+    for (const event of doc.events) {
+      const artifact = JSON.parse(Buffer.from(event.artifact_bytes_b64, "base64").toString("utf8")) as {
+        scope?: { workspace_id?: string | null; raw_agent_id?: string };
+        commit_bytes_b64?: string;
+      };
+      const commit = JSON.parse(Buffer.from(artifact.commit_bytes_b64 ?? "", "base64").toString("utf8")) as {
+        memory_id?: string;
+        event_id?: string;
+        agent_id?: string;
+        payload_hash?: string;
+        cid_ciphertext?: string;
+      };
+      const workspaceId = artifact.scope?.workspace_id;
+      const agentId = artifact.scope?.raw_agent_id ?? commit.agent_id;
+      const eventId = commit.event_id;
+      const mid = commit.memory_id ?? event.memory_id;
+      if (!workspaceId || !agentId || !eventId || !mid || !commit.payload_hash) {
+        throw new Error(`cannot disclose ${event.memory_id}: original scope/commit incomplete`);
+      }
+
+      const releaseBody = JSON.stringify({
+        release_mode: "workspace",
+        memory_id: mid,
+        workspace_id: workspaceId,
+        agent_id: agentId,
+        event_id: eventId,
+      });
+      const keyRes = await fetch(`${this.config.keyBrokerBaseUrl}${this.paths().workspaceKeyRelease}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.config.writeSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: releaseBody,
+        redirect: "error",
+      });
+      if (!keyRes.ok) {
+        const err = await keyRes.json().catch(() => ({})) as { error?: string };
+        throw new Error(err.error || `Workspace key release denied for ${mid}: ${keyRes.status}`);
+      }
+      const keyData = (await keyRes.json()) as { key?: string };
+      if (!keyData.key) throw new Error(`Workspace key release returned no key for ${mid}`);
+      // Key material is used ephemerally for decrypt+hash check and never written into the export.
+      const key = Buffer.from(keyData.key, "base64");
+
+      const ref = await this.getRef(mid);
+      let ctRes: Response;
+      if (ref.storage_provider === "supabase" && ref.storage_uri) {
+        ctRes = await fetch(ref.storage_uri);
+      } else {
+        let gateway = this.config.ipfsGatewayUrl || "https://gateway.pinata.cloud/ipfs/";
+        if (!/^https?:\/\//i.test(gateway)) gateway = "https://" + gateway;
+        gateway = gateway.replace(/\/?$/, "/");
+        const cid = (ref.cid_ciphertext || commit.cid_ciphertext || "").replace(/^ipfs:\/\//, "");
+        ctRes = await fetch(`${gateway}${cid}`);
+      }
+      if (!ctRes.ok) throw new Error(`Failed to fetch ciphertext for disclosure of ${mid}: ${ctRes.status}`);
+      const bundle = (await ctRes.json()) as EncryptedPayloadBundle;
+      if (!bundle?.alg || !bundle?.nonce || !bundle?.ciphertext || !bundle?.tag) {
+        throw new Error(`Malformed ciphertext bundle for ${mid}`);
+      }
+      const plaintext = decrypt(bundle, key);
+      const computedHash = hashPayload(plaintext);
+      const expectedHash = commit.payload_hash.startsWith("0x")
+        ? commit.payload_hash.slice(2)
+        : commit.payload_hash;
+      if (computedHash.toLowerCase() !== expectedHash.toLowerCase()) {
+        throw new Error(`disclosed plaintext contradicts payload_hash for ${mid}`);
+      }
+      event.disclosed_payload = JSON.parse(plaintext) as MemoryPayload;
+    }
+
+    return doc;
+  }
+
+  /**
+   * Verify: fetch ref metadata. Index flags / chain hashes are not cryptographic
+   * original proof — use exportEvidence + offline verifyHostedEvidenceExport for that.
+   */
   async verify(memoryId: string, expectedPayloadHash?: string): Promise<VerifyResult> {
     validateMemoryId(memoryId);
     try {

@@ -46,7 +46,10 @@ import {
   getOrCreateIdentity,
   verifySession,
   verifyBundle,
+  verifyHostedEvidenceExport,
+  parseHostedEvidenceExport,
 } from "@memora-hq/memora-verifier";
+import { readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -126,6 +129,52 @@ async function cmdLocalVerifyBundle(path: string) {
   if (!result.valid) { process.exitCode = 1; return; }
   // Cryptographic validity and signer identity are different claims — never conflate them.
   console.log("A signature proves the record was not altered. It does not prove who produced it.");
+}
+
+async function cmdHostedExport(memoryId: string, output: string, includeParents: boolean, disclose: boolean) {
+  const exported = await client.exportEvidence(memoryId, { includeParents, disclose });
+  await writeFile(resolve(output), JSON.stringify(exported, null, 2) + "\n", { mode: 0o600 });
+  console.log(`Wrote hosted evidence export to ${resolve(output)}`);
+  console.log(`Events: ${(exported as { events?: unknown[] }).events?.length ?? 0}`);
+  const disclosed = ((exported as { events?: Array<{ disclosed_payload?: unknown }> }).events ?? [])
+    .filter((e) => e.disclosed_payload != null).length;
+  console.log(disclose
+    ? `Disclosure: ${disclosed} event(s) plaintext attached after key release + hash verify`
+    : "Disclosure: none (sealed; use --disclose after authorized key release)");
+  console.log("Private keys and API credentials are never included.");
+}
+
+async function cmdHostedVerifyExport(
+  filePath: string,
+  opts: { operator: string; agentSigner?: string; trustGovernance?: boolean },
+) {
+  const raw = await readFile(resolve(filePath));
+  const doc = parseHostedEvidenceExport(raw);
+  const expectedAgentSigners: Record<string, string[]> = {};
+  if (opts.agentSigner) {
+    for (const event of doc.events) {
+      try {
+        const bytes = Buffer.from(event.artifact_bytes_b64, "base64");
+        const artifact = JSON.parse(bytes.toString("utf8")) as { commit_bytes_b64?: string };
+        if (artifact.commit_bytes_b64) {
+          const commit = JSON.parse(Buffer.from(artifact.commit_bytes_b64, "base64").toString("utf8")) as { agent_id?: string };
+          if (commit.agent_id) expectedAgentSigners[commit.agent_id] = [opts.agentSigner];
+        }
+      } catch { /* leave authorization indeterminate without agent binding */ }
+    }
+  }
+  const result = verifyHostedEvidenceExport(doc, {
+    expectedOperatorSigner: opts.operator,
+    ...(Object.keys(expectedAgentSigners).length > 0 ? { expectedAgentSigners } : {}),
+    ...(opts.trustGovernance ? { trustExportedGovernance: true } : {}),
+  });
+  console.log(`Hosted export: ${result.valid ? "verified" : "failed"} (${result.eventCount} event(s))`);
+  for (const c of result.claims) {
+    const mark = c.outcome === "pass" ? "✓" : c.outcome === "fail" ? "✗" : c.outcome === "indeterminate" ? "?" : "–";
+    console.log(`  ${mark} [${c.kind}] ${c.label}: ${c.outcome}${c.detail ? ` — ${c.detail}` : ""}`);
+  }
+  console.log("Cryptographic validity ≠ execution truth, policy compliance, or completeness.");
+  if (!result.valid) process.exitCode = 1;
 }
 // When pointed at the gateway (api.getmemora.dev) rather than a raw indexer, requests
 // must go through /v1/events with a per-agent API key as the write secret. Self-hosted
@@ -964,6 +1013,8 @@ async function main() {
     console.log("  memora local verify <session-id>");
     console.log("  memora local export <session-id> --out evidence.memora [--disclose]");
     console.log("  memora local verify-bundle <path>");
+    console.log("  memora hosted export --memory <id> --out export.json [--parents] [--disclose]");
+    console.log("  memora hosted verify-export <path> --operator <0x...> [--agent-signer <0x...>] [--trust-governance]");
     console.log("  # Live session capture (`local run`), receipts, and editor/agent hooks");
     console.log("  # live in memora-local, not this CLI — see README.md.");
     process.exit(1);
@@ -997,6 +1048,20 @@ async function main() {
       const path = args[2];
       if (!path) throw new Error("<path> required");
       await cmdLocalVerifyBundle(path);
+    } else if (cmd === "hosted" && sub === "export") {
+      const memory = getArg("--memory");
+      const output = getArg("--out");
+      if (!memory || !output) throw new Error("--memory and --out required");
+      await cmdHostedExport(memory, output, hasFlag("--parents"), hasFlag("--disclose"));
+    } else if (cmd === "hosted" && sub === "verify-export") {
+      const filePath = args[2];
+      const operator = getArg("--operator");
+      if (!filePath || !operator) throw new Error("<path> and --operator <0x...> required");
+      await cmdHostedVerifyExport(filePath, {
+        operator,
+        agentSigner: getArg("--agent-signer"),
+        trustGovernance: hasFlag("--trust-governance"),
+      });
     } else if (cmd === "write") {
       const agent = getArg("--agent");
       const file  = getArg("--file");
